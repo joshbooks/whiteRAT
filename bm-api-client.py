@@ -1,0 +1,1 @@
+#TODO little faux terminal looking thing that just hooks into the api to send messages and wait for replies
