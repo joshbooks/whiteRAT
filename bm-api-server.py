@@ -19,30 +19,32 @@ api = xmlrpclib.ServerProxy("http://bitmessage:security@localhost:8442/")
 #hardcoded for now, probably ought to read from a config file or something but meh
 psk = 'defaultvalue'
 channel = api.createChan(base64.b64encode(psk))
+if channel == 'API Error 0024: Chan address is already present.':
+	for i in json.loads(api.listAddresses2())['addresses']:
+		if base64.b64decode(i['label']) == "[chan] "+psk:
+			channel = i['address']
 
-data = json.loads(api.getAllInboxMessages())
+while True:
+	for i in json.loads(api.getAllInboxMessages())['inboxMessages']:
+		if i['toAddress'] == channel and base64.b64decode(i['subject']) == 'command':
+			print 'We see the message', base64.b64decode(i['message'])
+			if i['read'] == 0:
+				p1 = subprocess.Popen('sh -s' ,stdin=subprocess.PIPE , stdout=subprocess.PIPE, shell=True)
+				retval = p1.communicate(base64.b64decode(i['message']))
+				print retval
+				
+				newAddress = api.createRandomAddress(base64.b64encode("temporary"))
+	
+				print "sending return value from",newAddress
+				ack = api.sendMessage(channel, newAddress, base64.b64encode("return value"), base64.b64encode(str(retval)))
 
-
-for i in data['inboxMessages']:
-	if i['toAddress'] == channel:
-		print 'We see the message', base64.b64decode(i['message'])
-		if i['read'] == 0:
-			p1 = subprocess.Popen('sh -s' ,stdin=subprocess.PIPE , stdout=subprocess.PIPE, shell=True)
-			retval = p1.communicate(base64.b64decode(i['message']))
-			print retval
-			
-			newAddress = api.createRandomAddress(base64.b64encode("temporary"))
-
-			print "sending return value from",newAddress
-			ack = api.sendMessage(trusted, newAddress, base64.b64encode("return value"), base64.b64encode(str(retval)))
-
-			while ((api.getStatus(ack) != "ackreceived") and (api.getStatus(ack) != "msgsentnoackexpected")):
-				time.sleep(100)#this can take a while and is super ugly
+				while ((api.getStatus(ack) != "ackreceived") and (api.getStatus(ack) != "msgsentnoackexpected")):
+					time.sleep(100)#this can take a while and is super ugly
 				# I haven't looked at the api lately but I don't think there are any nice ways to wait
 				#so probably kep it like this for a little bit
 
-			print "deleting the temporary address was a", api.deleteAddress(newAddress)
-			print "we are marking as read the message", api.getInboxMessageByID(i["msgid"], True)
+				print "deleting the temporary address was a", api.deleteAddress(newAddress)
+				print "we are marking as read the message", api.getInboxMessageByID(i["msgid"], True)
 			
-		else:
-			print "but it is has already been read"
+			else:
+				print "but it is has already been read"
