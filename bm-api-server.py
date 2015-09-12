@@ -14,6 +14,9 @@ import base64
 import subprocess
 import os
 
+#TODO check and see if bm is already running with api enabled
+#if not handle it
+
 api = xmlrpclib.ServerProxy("http://bitmessage:security@localhost:8442/")
 
 #hardcoded for now, probably ought to read from a config file or something but meh
@@ -41,10 +44,11 @@ while True:
 				while ((api.getStatus(ack) != "ackreceived") and (api.getStatus(ack) != "msgsentnoackexpected")):
 					time.sleep(100)#this can take a while and is super ugly
 				# I haven't looked at the api lately but I don't think there are any nice ways to wait
-				#so probably kep it like this for a little bit
+				#so probably keep it like this for a little bit
 
-				print "deleting the temporary address was a", api.deleteAddress(newAddress)
-				print "we are marking as read the message", api.getInboxMessageByID(i["msgid"], True)
+				api.trashSentMessageByAckData(ack)
+				api.deleteAddress(newAddress)
+				api.getInboxMessageByID(i["msgid"], True)
 			
 			else:
 				print "but it is has already been read"

@@ -7,6 +7,8 @@ import base64
 import subprocess
 import os
 
+#TODO check and see if bm is already running with api enabled
+#if not handle it
 
 api = xmlrpclib.ServerProxy("http://bitmessage:security@localhost:8442/")
 
@@ -31,6 +33,7 @@ while True:
   while ((api.getStatus(ack) != "ackreceived") and (api.getStatus(ack) != "msgsentnoackexpected")):
 		time.sleep(100)
 
+  api.trashSentMessageByAckData(ack)
   api.deleteAddress(newAddress)
   
   notFound = True
